@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Upload</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
+        .hidden { display: none; }
+        .form-group { margin-bottom: 1rem; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .tab { padding: 0.5rem 1rem; cursor: pointer; border: 1px solid #ccc; }
+        .tab.active { background: #eee; }
+    </style>
+ </head>
+ <body>
+ 
+    <!-- Вкладки -->
+    <div class="tabs">
+        <div id="login-tab" class="tab active" onclick="showForm('login')">Login</div>
+        <div id="register-tab" class="tab" onclick="showForm('register')">Register</div>
+    </div>
+    <!-- Форма входа -->
+    <div id="login-form" class="form-group">
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p id="login-error" style="color: red;"></p>
+    </div>
+
+    <!-- Форма регистрации -->
+    <div id="register-form" class="form-group hidden">
+        <input type="text" id="reg-username" placeholder="Username">
+        <input type="password" id="reg-password" placeholder="Password">
+        <button onclick="register()">Register</button>
+        <p id="reg-error" style="color: red;"></p>
+    </div>
+
+    <!-- Upload UI moved to /static/upload.html -->
+    <script src="/static/script.js"></script>
+    <script>
+        // Use external checkAuth from script.js
+        if (typeof checkAuth === 'function') {
+            checkAuth();
+        }
+
+        function showForm(type) {
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            loginTab.classList.remove('active');
+            registerTab.classList.remove('active');
+            if (type === 'login') {
+                loginTab.classList.add('active');
+            } else {
+                registerTab.classList.add('active');
+            }
+            document.getElementById('login-form').classList.toggle('hidden', type !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', type !== 'register');
+        }
+
+        async function register() {
+            localStorage.removeItem('token'); // ← добавь эту строку
+
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            const errorEl = document.getElementById('reg-error');
+
+            try {
+                const res = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    // Успешная регистрация: убираем сообщение и переходим на страницу входа
+                    errorEl.textContent = '';
+                    showForm('login');
+                    window.location.replace('/auth');
+                } else {
+                    errorEl.textContent = data.detail || 'Registration failed';
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error';
+            }
+        }
+
+        async function login() {
+            // Очистка предыдущего токена
+            localStorage.removeItem('token');
+
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            try {
+                const res = await fetch('/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ username, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    errorEl.textContent = '';
+                    // Явно переходим на страницу загрузки после входа
+                    window.location.replace('/upload');
+                } else {
+                    errorEl.textContent = data.detail || 'Invalid credentials';
+                }
+            } catch (e) {
+                errorEl.textContent = 'Connection error';
+            }
+        }
+
+        // upload is implemented in /static/script.js
+
+        function logout() {
+            localStorage.removeItem('token');
+            document.querySelector('.tabs').classList.remove('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('upload-section').classList.add('hidden');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector('.tab:first-child').classList.add('active');
+        }
+    </script>
+  </body>
+</html>

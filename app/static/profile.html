@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Profile</title>
+    <script>
+        // Early guard: redirect to /auth if no token
+        try {
+            const t = localStorage.getItem('token');
+            if (!t) window.location.replace('/auth');
+        } catch {}
+    </script>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
+        .nav { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .nav a { text-decoration: none; color: #0366d6; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/upload">Upload</a>
+        <a href="/algorithm">Algorithm</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </div>
+
+    <h2>Your profile</h2>
+    <p>Username: <strong id="profile-username">...</strong></p>
+
+    <script src="/static/script.js"></script>
+    <script>
+        if (typeof checkAuth === 'function') {
+            checkAuth();
+        }
+        (async () => {
+            try {
+                const me = await getCurrentUser();
+                if (me && me.username) {
+                    document.getElementById('profile-username').textContent = me.username;
+                }
+            } catch {}
+        })();
+    </script>
+</body>
+</html>
