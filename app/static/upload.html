@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Upload</title>
+    <!-- Private page: requires a token. Redirect early if missing. -->
     <script>
         // Early guard: if no token, redirect immediately before rendering
         try {
@@ -18,6 +19,7 @@
     </style>
 </head>
 <body>
+    <!-- Simple navigation/header with links to other private pages. -->
     <div class="topbar">
         <div style="display:flex; align-items:center; gap:1rem;">
             <h2 style="margin:0;">Upload Files</h2>
@@ -30,19 +32,27 @@
         </div>
     </div>
 
+    <!-- Upload section: choose files and send to the backend. -->
     <div id="upload-section">
         <div class="row">
             <input type="file" id="fileInput" multiple />
             <button onclick="upload()">Upload</button>
         </div>
 
+        <!-- Your file list loads dynamically via loadUserFiles() in script.js -->
         <h3>Your Files</h3>
         <div id="user-files"></div>
         <div id="results" style="margin-top: 1rem;"></div>
+
+        <!-- Analysis chart for selected file -->
+        <h3 style="margin-top:1rem;">Engagement Over Time</h3>
+        <div id="chart-error" style="color:red; min-height: 1.2em;"></div>
+        <canvas id="engagement-chart" width="800" height="260" style="border:1px solid #ddd; border-radius:6px;"></canvas>
     </div>
 
     <script src="/static/script.js"></script>
     <script>
+        // Validate token and possibly redirect
         if (typeof checkAuth === 'function') {
             checkAuth();
         }

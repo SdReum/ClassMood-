@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Media Upload</title>
+    <!-- This is the auth page (login/register). The real app UI is on /upload. -->
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; }
         .hidden { display: none; }
@@ -12,13 +13,12 @@
     </style>
  </head>
  <body>
- 
-    <!-- Вкладки -->
+    <!-- Tabs let you switch between Login and Register forms. -->
     <div class="tabs">
         <div id="login-tab" class="tab active" onclick="showForm('login')">Login</div>
         <div id="register-tab" class="tab" onclick="showForm('register')">Register</div>
     </div>
-    <!-- Форма входа -->
+    <!-- Login form. The login() function is defined in this file below. -->
     <div id="login-form" class="form-group">
         <input type="text" id="login-username" placeholder="Username">
         <input type="password" id="login-password" placeholder="Password">
@@ -26,7 +26,7 @@
         <p id="login-error" style="color: red;"></p>
     </div>
 
-    <!-- Форма регистрации -->
+    <!-- Register form. The register() function is defined in this file below. -->
     <div id="register-form" class="form-group hidden">
         <input type="text" id="reg-username" placeholder="Username">
         <input type="password" id="reg-password" placeholder="Password">
@@ -34,14 +34,15 @@
         <p id="reg-error" style="color: red;"></p>
     </div>
 
-    <!-- Upload UI moved to /static/upload.html -->
+    <!-- Upload UI lives on /upload. We load script.js to manage auth and redirects. -->
     <script src="/static/script.js"></script>
     <script>
-        // Use external checkAuth from script.js
+        // Use checkAuth() from script.js to redirect logged-in users to /upload
         if (typeof checkAuth === 'function') {
             checkAuth();
         }
 
+        // Simple showForm() helper to toggle between Login and Register forms
         function showForm(type) {
             const loginTab = document.getElementById('login-tab');
             const registerTab = document.getElementById('register-tab');
@@ -56,6 +57,7 @@
             document.getElementById('register-form').classList.toggle('hidden', type !== 'register');
         }
 
+        // Simple register() helper that calls /auth/register
         async function register() {
             localStorage.removeItem('token'); // ← добавь эту строку
 
@@ -83,6 +85,7 @@
             }
         }
 
+        // Simple login() helper that calls /auth/token
         async function login() {
             // Очистка предыдущего токена
             localStorage.removeItem('token');
@@ -113,6 +116,7 @@
 
         // upload is implemented in /static/script.js
 
+        // Local logout for the auth page (clears token and resets forms)
         function logout() {
             localStorage.removeItem('token');
             document.querySelector('.tabs').classList.remove('hidden');

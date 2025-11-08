@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Algorithm</title>
+    <!-- Private page to trigger your processing algorithm on uploaded files -->
     <style>
         body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; }
         .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -12,6 +13,7 @@
     </style>
 </head>
 <body>
+    <!-- Simple top navigation -->
     <div class="topbar">
         <div style="display:flex; align-items:center; gap:1rem;">
             <h2 style="margin:0;">Algorithm</h2>
@@ -24,6 +26,7 @@
         </div>
     </div>
 
+    <!-- Controls to run a (demo) algorithm. Replace with real options later. -->
     <div class="section">
         <h3>Run algorithm on your uploaded files</h3>
         <div class="row controls">
@@ -38,13 +41,14 @@
 
     <script src="/static/script.js"></script>
     <script>
+        // Validate token and possibly redirect
         if (typeof checkAuth === 'function') {
             checkAuth();
         }
         if (typeof showUsernameInNav === 'function') {
             showUsernameInNav();
         }
-        // Demo run handler (placeholder)
+        // Demo run handler (placeholder). Replace with real backend call.
         document.getElementById('run-btn').addEventListener('click', async () => {
             document.getElementById('algo-output').textContent = 'Algorithm executed (demo). Hook your backend here.';
         });

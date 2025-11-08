@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <title>Profile</title>
+    <!-- Private page that shows the current user's username -->
     <script>
         // Early guard: redirect to /auth if no token
         try {
@@ -17,6 +18,7 @@
     </style>
 </head>
 <body>
+    <!-- Simple navigation header -->
     <div class="nav">
         <a href="/upload">Upload</a>
         <a href="/algorithm">Algorithm</a>
@@ -28,6 +30,7 @@
 
     <script src="/static/script.js"></script>
     <script>
+        // Validate token and optionally redirect if invalid
         if (typeof checkAuth === 'function') {
             checkAuth();
         }
