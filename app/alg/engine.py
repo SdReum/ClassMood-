@@ -12,6 +12,7 @@ Implementation details based on user's spec:
 from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
+import logging
 
 import cv2  # type: ignore
 import pandas as pd  # noqa: F401 (may be useful in future)
@@ -96,7 +97,27 @@ def analyze_file(path: str | Path) -> Dict[str, List[dict]]:
     try:
         series = _analyze_video(p)
     except Exception:
-        # Fallback to image
+        # Fallback to imag
         series = _analyze_image(p)
+
+    # Terminal logs (server): print stats + few points
+    try:
+        vals = [float(pt.get("value", 0.0)) for pt in series]
+        times = [float(pt.get("t", 0.0)) for pt in series]
+        avg = (sum(vals) / max(1, len(vals))) if series else 0.0
+        vmin = min(vals) if vals else 0.0
+        vmax = max(vals) if vals else 0.0
+        tmin = min(times) if times else 0.0
+        tmax = max(times) if times else 0.0
+        logger = logging.getLogger("alg.engine")
+        logger.info(
+            "analyze_file path=%s len=%d avg=%.4f min=%.4f max=%.4f t=[%.3f..%.3f]",
+            str(p), len(series), avg, vmin, vmax, tmin, tmax,
+        )
+        logger.info("sample: %s", series)
+        # Uncomment next line to dump full series at DEBUG
+        logger.debug("full series: %s", series)
+    except Exception as e:
+        logging.getLogger("alg.engine").exception("logging failed: %s", e)
 
     return {"series": series}

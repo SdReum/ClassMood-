@@ -12,6 +12,7 @@ from app.db import SessionLocal, MediaFile, User
 import os
 from pathlib import Path
 from app.alg.engine import analyze_file
+import logging
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -163,6 +164,29 @@ async def analyze_media_file(file_id: int, user: str = Depends(get_current_user)
             raise HTTPException(status_code=404, detail="Stored file is missing")
 
         result = analyze_file(filepath)
+        # Server-side logs: print series stats and sample points to terminal
+        try:
+            series = result.get("series", []) if isinstance(result, dict) else []
+            vals = [float(p.get("value", 0.0)) for p in series]
+            times = [float(p.get("t", 0.0)) for p in series]
+            if series:
+                avg = sum(vals) / max(1, len(vals))
+                vmin = min(vals)
+                vmax = max(vals)
+                tmin = min(times)
+                tmax = max(times)
+                logging.getLogger("media.analyze").info(
+                    "Analyze file_id=%s len=%d avg=%.4f min=%.4f max=%.4f t=[%.3f..%.3f]",
+                    file_id, len(series), avg, vmin, vmax, tmin, tmax,
+                )
+                sample = series[:5]
+                logging.getLogger("media.analyze").info("Sample points: %s", sample)
+            else:
+                logging.getLogger("media.analyze").warning(
+                    "Analyze file_id=%s returned empty series", file_id
+                )
+        except Exception as e:
+            logging.getLogger("media.analyze").exception("Failed to log analyze output: %s", e)
         return result
     finally:
         db.close()

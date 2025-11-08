@@ -45,7 +45,17 @@ async function analyzeFile(id) {
         });
         const data = await res.json();
         // Debug: see server payload if chart not showing
-        if (window && window.console) console.debug('analyze response', data);
+        if (window && window.console) {
+            console.debug('analyze response', data);
+            if (Array.isArray(data?.series)) {
+                // Tabular view in browser console
+                console.table(data.series.map(p => ({ t: Number(p.t), value: Number(p.value) })));
+                // Summary
+                const vals = data.series.map(p => Number(p.value) || 0);
+                const avg = vals.reduce((a,b)=>a+b,0) / Math.max(1, vals.length);
+                console.log(`Series length: ${vals.length}, avg value: ${avg.toFixed(3)}`);
+            }
+        }
         if (!res.ok) {
             if (errEl) errEl.textContent = data.detail || 'Analyze failed';
             return;
@@ -73,7 +83,7 @@ function renderChart(series) {
 
     if (!series || series.length === 0) return;
 
-    // Compute bounds
+    // Compute bounds on raw data
     const times = series.map(p => Number(p.t) || 0);
     const values = series.map(p => Number(p.value) || 0);
     const tMin = Math.min(...times);
@@ -81,20 +91,67 @@ function renderChart(series) {
     const vMin = 0; // clamp 0..1 for engagement
     const vMax = 1;
 
+    // Resample into ~12 равных отрезков (0%..100%) — даст 13 точек
+    const bins = 12; // 0%, ~8.3%, ..., 100%
+    const pairs = times.map((t, i) => ({ t, v: values[i] })).sort((a,b)=>a.t-b.t);
+    const interp = (tt) => {
+        if (pairs.length === 0) return 0;
+        if (tt <= pairs[0].t) return pairs[0].v;
+        if (tt >= pairs[pairs.length - 1].t) return pairs[pairs.length - 1].v;
+        for (let j = 0; j < pairs.length - 1; j++) {
+            const a = pairs[j], b = pairs[j + 1];
+            if (tt >= a.t && tt <= b.t) {
+                const r = (tt - a.t) / Math.max(1e-9, (b.t - a.t));
+                return a.v + r * (b.v - a.v);
+            }
+        }
+        return pairs[pairs.length - 1].v;
+    };
+    const rTimes = [];
+    const rValues = [];
+    if (tMax === tMin) {
+        rTimes.push(tMin);
+        rValues.push(values[0] ?? 0);
+    } else {
+        for (let b = 0; b <= bins; b++) {
+            const tt = tMin + (b / bins) * (tMax - tMin);
+            rTimes.push(tt);
+            rValues.push(interp(tt));
+        }
+    }
+
     // Padding
     const padL = 40, padR = 10, padT = 10, padB = 30;
     const plotW = w - padL - padR;
     const plotH = h - padT - padB;
 
-    // Axes
-    ctx.strokeStyle = '#888';
+    // Grid and Axes
+    ctx.strokeStyle = '#ddd';
     ctx.lineWidth = 1;
-    // X axis
+    // Horizontal grid every 10%
+    for (let g = 0; g <= 10; g++) {
+        const gy = padT + (1 - g / 10) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(padL, gy);
+        ctx.lineTo(w - padR, gy);
+        ctx.stroke();
+    }
+    // Vertical grid: adaptive count based on pixel width (denser time divisions)
+    // ~ one grid line every ~20px, clamped
+    const segs = Math.max(16, Math.min(80, Math.round(plotW / 20)));
+    for (let s = 0; s <= segs; s++) {
+        const gx = padL + (s / segs) * plotW;
+        ctx.beginPath();
+        ctx.moveTo(gx, padT);
+        ctx.lineTo(gx, h - padB);
+        ctx.stroke();
+    }
+    // Axes lines
+    ctx.strokeStyle = '#888';
     ctx.beginPath();
     ctx.moveTo(padL, h - padB);
     ctx.lineTo(w - padR, h - padB);
     ctx.stroke();
-    // Y axis
     ctx.beginPath();
     ctx.moveTo(padL, padT);
     ctx.lineTo(padL, h - padB);
@@ -104,26 +161,102 @@ function renderChart(series) {
     ctx.fillStyle = '#555';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`${tMin.toFixed(0)}s`, padL, h - 10);
-    ctx.fillText(`${tMax.toFixed(0)}s`, w - padR, h - 10);
+    // Minor x-ticks at every resampled bin with small markers
+    ctx.strokeStyle = '#aaa';
+    for (let p = 0; p <= bins; p++) {
+        const xx = padL + (p / bins) * plotW;
+        ctx.beginPath();
+        ctx.moveTo(xx, h - padB);
+        ctx.lineTo(xx, h - padB + 4);
+        ctx.stroke();
+    }
+    // Dynamic labeling along X: минимум 10-12 подписей если хватает места
+    const approxLabelEveryPx = 60; // не чаще, чтобы не слипались
+    const maxLabels = Math.max(3, Math.floor(plotW / approxLabelEveryPx));
+    const step = Math.max(1, Math.round(bins / Math.max(1, maxLabels)));
+    for (let p = 0; p <= bins; p++) {
+        if (p % step !== 0 && p !== bins) continue;
+        const xx = padL + (p / bins) * plotW;
+        const tt = tMin + (p / bins) * (tMax - tMin);
+        ctx.fillText(`${tt.toFixed(0)}s`, xx, h - 10);
+    }
     ctx.textAlign = 'right';
-    ctx.fillText('1.0', padL - 6, padT + 4);
-    ctx.fillText('0.0', padL - 6, h - padB);
+    for (let g = 0; g <= 10; g += 2) {
+        const label = `${g * 10}%`;
+        const gy = padT + (1 - g / 10) * plotH;
+        ctx.fillText(label, padL - 6, gy + 4);
+    }
 
     // Scale helpers
     const x = t => padL + ((t - tMin) / Math.max(1e-9, (tMax - tMin))) * plotW;
     const y = v => padT + (1 - (v - vMin) / Math.max(1e-9, (vMax - vMin))) * plotH;
 
-    // Line
+    // Primary line (green) over resampled points
     ctx.strokeStyle = '#2a7';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    for (let i = 0; i < series.length; i++) {
-        const px = x(times[i]);
-        const py = y(values[i]);
+    for (let i = 0; i < rTimes.length; i++) {
+        const px = x(rTimes[i]);
+        const py = y(rValues[i]);
         if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.stroke();
+
+    // Point markers
+    ctx.fillStyle = '#2a7';
+    for (let i = 0; i < rTimes.length; i++) {
+        const px = x(rTimes[i]);
+        const py = y(rValues[i]);
+        ctx.beginPath();
+        ctx.arc(px, py, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Threshold line at 70% (red) — separates good vs bad time
+    const thr = 0.7;
+    ctx.strokeStyle = '#e33';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padL, y(thr));
+    ctx.lineTo(w - padR, y(thr));
+    ctx.stroke();
+    // Label for the threshold
+    ctx.fillStyle = '#e33';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('70%', padL + 4, y(thr) - 6);
+
+    // Last value tag
+    const lastX = x(rTimes[rTimes.length - 1]);
+    const lastY = y(rValues[rValues.length - 1]);
+    ctx.fillStyle = '#000';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${(rValues[rValues.length - 1] * 100).toFixed(1)}%`, Math.min(lastX + 6, w - 40), lastY - 6);
+
+    // Highlight max and min points with exact values
+    const maxVal = Math.max(...rValues);
+    const minVal = Math.min(...rValues);
+    const maxIdx = rValues.indexOf(maxVal);
+    const minIdx = rValues.indexOf(minVal);
+    const drawLabel = (idx, color, offsetY) => {
+        const px = x(rTimes[idx]);
+        const py = y(rValues[idx]);
+        // emphasize point
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        const tx = Math.max(padL + 20, Math.min(px, w - padR - 20));
+        const ty = Math.max(padT + 12, Math.min(py + offsetY, h - padB - 4));
+        ctx.fillText(`${(rValues[idx] * 100).toFixed(1)}%`, tx, ty);
+    };
+    if (maxIdx >= 0) drawLabel(maxIdx, '#e33', -10);
+    if (minIdx >= 0) drawLabel(minIdx, '#33c', 14);
 }
 
 // Load the current user's file list and render simple rows with a delete button.
