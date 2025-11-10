@@ -18,7 +18,8 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 # Match auth module behavior: provide a development default when JWT_SECRET is unset.
 # WARNING: Set a strong JWT_SECRET in production (.env)
-SECRET_KEY = os.getenv("JWT_SECRET") or "dev-secret-change-me"
+# Must be identical to app/auth/routes.py default to keep tokens compatible across modules.
+SECRET_KEY = os.getenv("JWT_SECRET") or "H7p-BLIlm61RDYnNuWrLr9OukKNjHPpJMRASp4hhZ3E"
 ALGORITHM = "HS256"
 
 # Where we store uploaded files on disk (local dev). In production, consider S3.

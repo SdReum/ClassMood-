@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Profile</title>
     <!-- Private page that shows the current user's username -->
+    <link rel="stylesheet" href="/static/style.css" />
     <script>
         // Early guard: redirect to /auth if no token
         try {
@@ -11,22 +12,24 @@
             if (!t) window.location.replace('/auth');
         } catch {}
     </script>
-    <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; }
-        .nav { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        .nav a { text-decoration: none; color: #0366d6; }
-    </style>
 </head>
 <body>
-    <!-- Simple navigation header -->
-    <div class="nav">
-        <a href="/upload">Upload</a>
-        <a href="/algorithm">Algorithm</a>
-        <a href="#" onclick="logout()">Logout</a>
-    </div>
+    <div class="container">
+      <!-- Simple navigation header -->
+      <div class="topbar" style="margin-bottom:1rem;">
+          <div class="row" style="align-items:center;">
+              <a href="/upload">Upload</a>
+          </div>
+          <div class="row" style="align-items:center;">
+              <button class="outline" onclick="logout()">Logout</button>
+          </div>
+      </div>
 
-    <h2>Your profile</h2>
-    <p>Username: <strong id="profile-username">...</strong></p>
+      <div class="section">
+        <h2 style="margin-top:0;">Your profile</h2>
+        <p>Username: <strong id="profile-username">...</strong></p>
+      </div>
+    </div>
 
     <script src="/static/script.js"></script>
     <script>

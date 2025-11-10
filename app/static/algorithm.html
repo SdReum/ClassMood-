@@ -4,32 +4,27 @@
     <meta charset="utf-8" />
     <title>Algorithm</title>
     <!-- Private page to trigger your processing algorithm on uploaded files -->
-    <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 2rem auto; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .section { border: 1px solid #ddd; padding: 1rem; border-radius: 6px; }
-        .row { margin: 0.5rem 0; }
-        .controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-    </style>
+    <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-    <!-- Simple top navigation -->
-    <div class="topbar">
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <h2 style="margin:0;">Algorithm</h2>
-            <a href="/upload">Upload</a>
-            <a href="/profile">Profile</a>
-        </div>
-        <div style="display:flex; align-items:center; gap:1rem;">
-            <span id="profile-username"></span>
-            <button onclick="logout()">Logout</button>
-        </div>
-    </div>
+    <div class="container">
+      <!-- Simple top navigation -->
+      <div class="topbar" style="margin-bottom:1rem;">
+          <div class="row" style="align-items:center;">
+              <h2 style="margin:0;">Algorithm</h2>
+              <a href="/upload">Upload</a>
+              <a href="/profile">Profile</a>
+          </div>
+          <div class="row" style="align-items:center;">
+              <span id="profile-username"></span>
+              <button class="outline" onclick="logout()">Logout</button>
+          </div>
+      </div>
 
     <!-- Controls to run a (demo) algorithm. Replace with real options later. -->
     <div class="section">
         <h3>Run algorithm on your uploaded files</h3>
-        <div class="row controls">
+        <div class="row" style="align-items:center; gap:0.5rem; flex-wrap:wrap;">
             <label for="algo-select">Algorithm:</label>
             <select id="algo-select">
                 <option value="demo">Demo</option>
@@ -37,6 +32,7 @@
             <button id="run-btn">Run</button>
         </div>
         <div id="algo-output" class="row"></div>
+    </div>
     </div>
 
     <script src="/static/script.js"></script>

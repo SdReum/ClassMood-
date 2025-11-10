@@ -20,7 +20,7 @@ router = APIRouter()
 # JWT configuration
 # For development, fall back to a simple default if JWT_SECRET is not set.
 # WARNING: Always set a strong JWT_SECRET in production (.env)
-SECRET_KEY = os.getenv("JWT_SECRET") or "dev-secret-change-me"
+SECRET_KEY = os.getenv("JWT_SECRET") or "H7p-BLIlm61RDYnNuWrLr9OukKNjHPpJMRASp4hhZ3E"
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
